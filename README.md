@@ -87,9 +87,10 @@ Then run `pre-commit install`. The hook checks staged paths, not working-tree co
 
 ## Development
 
-Run the dependency-free test suite:
+Install EnvGuard in editable mode, then run the test suite:
 
 ```bash
+python -m pip install -e .
 python -m unittest discover -s tests -v
 ```
 

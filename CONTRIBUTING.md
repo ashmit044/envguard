@@ -4,9 +4,10 @@ Thanks for helping make EnvGuard safer and easier to use.
 
 ## Local checks
 
-EnvGuard targets Python 3.10+ and has no runtime dependencies. Install Git and run:
+EnvGuard targets Python 3.10+ and has no runtime dependencies. Install Git and the project in editable mode, then run:
 
 ```bash
+python -m pip install -e .
 python -m unittest discover -s tests -v
 ```
 
