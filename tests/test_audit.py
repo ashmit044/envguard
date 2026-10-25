@@ -7,7 +7,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from envguard.audit import audit_repository, is_environment_file, staged_environment_files
+from envguard.audit import (
+    EnvGuardError,
+    audit_repository,
+    is_environment_file,
+    staged_environment_files,
+)
 
 
 class EnvGuardTests(unittest.TestCase):
@@ -71,6 +76,36 @@ class EnvGuardTests(unittest.TestCase):
         self.write(".env.example", "API_KEY=replace-me\n")
 
         self.assertEqual(audit_repository(self.root), [])
+
+    def test_audit_uses_validated_repository_patterns_for_untracked_and_staged_files(self):
+        self.write(
+            ".envguard.json",
+            '{"version": 1, "additional_environment_file_patterns": '
+            '["settings.private"]}',
+        )
+        self.write("config/settings.private")
+
+        self.assertEqual(
+            audit_repository(self.root),
+            [{"path": "config/settings.private", "issue": "not ignored by Git"}],
+        )
+        self.git("add", "config/settings.private")
+        self.assertEqual(staged_environment_files(self.root), ["config/settings.private"])
+
+    def test_invalid_repository_policy_fails_with_actionable_error(self):
+        self.write(".envguard.json", '{"version": 1, "unexpected": true}')
+
+        with self.assertRaisesRegex(EnvGuardError, "supported policy fields"):
+            audit_repository(self.root)
+
+    def test_policy_rejects_path_patterns(self):
+        self.write(
+            ".envguard.json",
+            '{"version": 1, "additional_environment_file_patterns": ["config/*.key"]}',
+        )
+
+        with self.assertRaisesRegex(EnvGuardError, "filename patterns"):
+            audit_repository(self.root)
 
     def test_staged_check_reads_paths_from_the_index_and_exempts_templates(self):
         self.write(".gitignore", ".env*\n!.env.example\n")

@@ -42,6 +42,24 @@ envguard audit --json
 envguard check-staged --json
 ```
 
+### Customize filename conventions
+
+Repositories with additional local credential-file conventions can add a
+`.envguard.json` at the Git root. Patterns match basenames anywhere in the
+repository, while all built-in environment and template patterns remain active:
+
+```json
+{
+  "version": 1,
+  "additional_environment_file_patterns": ["settings.private", "*.secrets"],
+  "additional_template_patterns": ["*.env.dist-example"]
+}
+```
+
+Policy JSON is validated when either command runs. Unknown fields, unsupported
+versions, or patterns containing path separators fail clearly rather than
+silently weakening the checks.
+
 ### Add a pre-commit hook
 
 With [pre-commit](https://pre-commit.com/) installed, add this to `.pre-commit-config.yaml`:
@@ -62,7 +80,7 @@ Then run `pre-commit install`. The hook checks staged paths, not working-tree co
 ## Scope and limitations
 
 - Local names such as `.env`, `.env.local`, `.envrc`, and `settings.env` are flagged. Common templates ending in `.example`, `.sample`, `.template`, or `.dist` are allowed.
-- The audit checks tracked files and local dotenv paths against Git's effective nested ignore rules. Large generated directories are pruned.
+- The audit uses Git's tracked and unignored path listings, so nested and global ignore rules are applied without walking ignored build outputs or launching one Git process per candidate file.
 - EnvGuard is not a secret scanner: it does not inspect values or Git history. Keep a dedicated scanner such as Gitleaks and provider-side push protection enabled as additional layers.
 - A template filename is not proof that its values are safe. Keep real credentials out of `.env.example` and similar files.
 - When a real key has been exposed, revoke or rotate it; removing a file from the latest commit cannot make an exposed credential safe again.
